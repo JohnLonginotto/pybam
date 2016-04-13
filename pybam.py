@@ -3,6 +3,7 @@ import sys
 import zlib
 import struct
 import itertools
+import subprocess
 
 ##########################################
 ## Documentation ? What documentation.. ##
@@ -75,9 +76,7 @@ class bgunzip:
         self.chromosome_names = []
         self.chromosome_lengths = []
         self.chromosomes_from_header = []
-        if type(file_handle) == str: self.file_handle = open(file_handle,'rb')
-        elif type(file_handle) == file: self.file_handle = file_handle
-        else: print 'ERROR: I do not know how to open and read from "' + str(file_handle) + '"'; exit()
+        self.file_handle = file_handle
 
         # Now we init the generator that, when iterated, will return some chunk of uncompress data.
         self.generator = self._generator()
@@ -123,8 +122,24 @@ class bgunzip:
     def next(self): return next(self._iterator)
 
     def _generator(self):
-        data = self.file_handle.read(10000000)
-        self.bytes_read += 10000000
+        try:
+            if type(self.file_handle) == str: p = subprocess.Popen(['pigz','-dc',self.file_handle], stdout=subprocess.PIPE)
+            elif type(self.file_handle) == file: p = subprocess.Popen(['pigz','-dc'],stdin=self.file_handle, stdout=subprocess.PIPE)
+            else: print 'ERROR: I do not know how to open and read from "' + str(self.file_handle) + '"'; exit()
+            self.file_handle = p.stdout
+            sys.stderr.write('Using pigz!\n')
+        except OSError:
+            try:
+                if type(self.file_handle) == str: p = subprocess.Popen(['gzip','-dc',self.file_handle], stdout=subprocess.PIPE)
+                elif type(self.file_handle) == file: p = subprocess.Popen(['gzip','-dc'],stdin=self.file_handle, stdout=subprocess.PIPE)
+                else: print 'ERROR: I do not know how to open and read from "' + str(self.file_handle) + '"'; exit()
+                self.file_handle = p.stdout
+                sys.stderr.write('Using gzip!\n')
+            except OSError:
+                sys.stderr.write('Using internal Python...\n') # We will end up using the python code below. It is faster than the gzip module, but
+                                                               # due to how slow Python's zlib module is, it will end up being about 2x slower than pysam.
+        data = self.file_handle.read(655360)
+        self.bytes_read += 655360
         cache = []
         blocks_left_to_grab = self.blocks_at_a_time
         bs = 0
@@ -134,7 +149,7 @@ class bgunzip:
         decompress = zlib.decompress
         while data:
             if len(data) - bs < 65536:
-                data = data[bs:] + self.file_handle.read(50000000)
+                data = data[bs:] + self.file_handle.read(35536)
                 self.bytes_read += len(data) - bs
                 bs = 0
 
@@ -142,10 +157,10 @@ class bgunzip:
             if not magic: break # a child's heart
             if magic != "\x1f\x8b\x08\x04":
                 if magic == 'BAM\1':
-                    # The user has passed us already unzipped data. No problem, we can deal.
+                    # The user has passed us already unzipped data, or we're reading from pigz/gzip :)
                     while data:
                         yield data
-                        data = self.file_handle.read(50000000)
+                        data = self.file_handle.read(35536)
                         self.bytes_read += len(data)
                     raise StopIteration
                 elif magic == 'SQLi': print 'OOPS: You have used an SQLite database as your input BAM file!!'; exit()
@@ -266,9 +281,14 @@ def parser(data_generator):
     from array import array
     from struct import unpack
     p = 0
+    #entered = 0
+    #err1 = 0
+    #err2 = 0
     while True:
         try:
-            while len(chunk) < p+36: chunk = chunk[p:] + next(data_generator); p = 0
+            #entered += 1
+            while len(chunk) < p+36: chunk = chunk[p:] + next(data_generator); p = 0 #; err1 += 1
+
             '''
 
     # Some values require the length of the previous values to be known before they can be grabbed. Add those to our 'dependency' list:
@@ -309,7 +329,7 @@ def parser(data_generator):
     if 'tlen_bam'        in deps: unpack += "\n            tlen_bam        = chunk[p+32:p+36]"
 
     unpack += '''
-            while len(chunk) < p + 4 + block_size: chunk = chunk[p:] + next(data_generator); p = 0
+            while len(chunk) < p + 4 + block_size: chunk = chunk[p:] + next(data_generator); p = 0 #; err2 += 1
         except StopIteration: break
         end = p + block_size + 4
 '''
@@ -350,6 +370,7 @@ def parser(data_generator):
             tags.append((tag_name,tag_type,tag_data))
             p = p_end\n'''
     unpack += '        p = end\n'
+    #unpack += '        if pos == 2902375: print err1,err2,entered\n'
     unpack += '        yield ' + ','.join([x for x in fields])
     global code    # To allow user to view
     code = unpack  # code with pybam.code
@@ -365,5 +386,6 @@ def parser(data_generator):
 ## This code was written by John Longinotto, a PhD student of the Pospisilik Lab at the Max Planck Institute of Immunbiology & Epigenetics, Freiburg.  ##
 ## My PhD is funded by the Deutsches Epigenom Programm (DEEP), and the Max Planck IMPRS Program.                                                       ##
 ## I study Adipose Biology and Circadian Rhythm in mice, although it seems these days I spend most of my time at the computer and not at the bench.    ##
+## Can't complain. Mice stink, and they're only awake when I should be asleep...                                                                       ##
 ##                                                                                                                                                     ##
 #########################################################################################################################################################
