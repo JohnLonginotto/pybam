@@ -281,13 +281,9 @@ def parser(data_generator):
     from array import array
     from struct import unpack
     p = 0
-    #entered = 0
-    #err1 = 0
-    #err2 = 0
     while True:
         try:
-            #entered += 1
-            while len(chunk) < p+36: chunk = chunk[p:] + next(data_generator); p = 0 #; err1 += 1
+            while len(chunk) < p+36: chunk = chunk[p:] + next(data_generator); p = 0
 
             '''
 
@@ -329,7 +325,7 @@ def parser(data_generator):
     if 'tlen_bam'        in deps: unpack += "\n            tlen_bam        = chunk[p+32:p+36]"
 
     unpack += '''
-            while len(chunk) < p + 4 + block_size: chunk = chunk[p:] + next(data_generator); p = 0 #; err2 += 1
+            while len(chunk) < p + 4 + block_size: chunk = chunk[p:] + next(data_generator); p = 0
         except StopIteration: break
         end = p + block_size + 4
 '''
@@ -370,7 +366,6 @@ def parser(data_generator):
             tags.append((tag_name,tag_type,tag_data))
             p = p_end\n'''
     unpack += '        p = end\n'
-    #unpack += '        if pos == 2902375: print err1,err2,entered\n'
     unpack += '        yield ' + ','.join([x for x in fields])
     global code    # To allow user to view
     code = unpack  # code with pybam.code
@@ -386,6 +381,5 @@ def parser(data_generator):
 ## This code was written by John Longinotto, a PhD student of the Pospisilik Lab at the Max Planck Institute of Immunbiology & Epigenetics, Freiburg.  ##
 ## My PhD is funded by the Deutsches Epigenom Programm (DEEP), and the Max Planck IMPRS Program.                                                       ##
 ## I study Adipose Biology and Circadian Rhythm in mice, although it seems these days I spend most of my time at the computer and not at the bench.    ##
-## Can't complain. Mice stink, and they're only awake when I should be asleep...                                                                       ##
 ##                                                                                                                                                     ##
 #########################################################################################################################################################
