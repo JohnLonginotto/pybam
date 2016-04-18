@@ -8,7 +8,7 @@ This project has not been code-reviewed, tested, or even run on more than a hand
 # Using pybam
 
 ### bgunzip
-Pybam consists of 1 class and 1 function. The class, `bgunzip()`, will remove the compression from a BAM file (from sys.stdin, an open file handle or file path as a string), parse out the header information, and become an iterable that, if used, returns large blocks of pure uncompressed BAM data.
+Pybam consists of 1 class and 1 function. The class, `bgunzip()`, will remove the compression from a BAM file (from sys.stdin, an open file handle, or file path as a string), parse out the header information, and become an iterable that, if used, returns large blocks of pure uncompressed BAM data.
 
         python
         Python 2.7.10 (default, Jul 14 2015, 19:46:27)
