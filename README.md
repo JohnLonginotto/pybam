@@ -82,7 +82,7 @@ This data is also from the binary portion of the header, called l_ref in the SAM
         >>> print pure_bam_data.original_binary_header[:3]
         BAM
 
-.original_binary_header() is the byte-for-byte BAM header, right up until the first byte of the first read. Above I have only printed the first 3 characters, which for a valid BAM file should always be "BAM". The rest of the header is a mix of ASCII and unprintable binary. You can write this out to disk if you want to make a new valid BAM file header, but with some other read data in the file.
+.original_binary_header is the byte-for-byte BAM header, right up until the first byte of the first read. Above I have only printed the first 3 characters, which for a valid BAM file should always be "BAM". The rest of the header is a mix of ASCII and unprintable binary. You can write this out to disk if you want to make a new valid BAM file header, but with some other read data in the file.
 
 Now we can iterate this class and get back pure, decompressed BAM data, starting from the first read in the file, until the last read in the file:
 
