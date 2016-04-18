@@ -130,7 +130,7 @@ I have not settled on a good naming schema for the parser yet, so it may change 
         tags         : A list, in the order they appear in the BAM file, of tag name (2-letter ID), tag type (1-letter encoding a data type), and variable amount of data as determined by the data type. Just like SAM.
 
 We can also get all of that data as it was in the BAM (without any conversion) by appending "\_bam" to the end. So for example, for the raw 4-bit encoded seq data, use 'seq_bam'. The exception is 'bin\_', which alread has a '\_' at the end because 'bin' is a python keyword we dont want to use. For 'bin\_' use 'bin_bam'.
-There will also be some helper functions in the future like 'read' and 'read_bam' to get the whole read's data back without specifying every little thing. This will be useful if you want to parse the bam's SAM data, but then write the whole read to disk in BAM format.
+There will also be some helper functions in the future like 'read' and 'read_bam' to get the whole read's data back without specifying every little thing. This will be useful if you want to parse the file's SAM data, but then write the whole read to disk in BAM format.
 
 So finally, to compile your own parser do something like this:
 
