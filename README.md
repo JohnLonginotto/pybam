@@ -1,7 +1,7 @@
 # pybam
 #### A simple, 100% python, BAM file reader.
 
-This project has not been code-reviewed, tested, or even run on more than a handful of BAM files - however if we can get it to work reliably, it would make incorporating BAM file reading into python much simpler since there are no external dependencies to install/compile. Furthermore, initial results show it's pretty fast -- although this is most likely because decompression of the BAM files can be done in parallel on pybam (via pigz), utilizing multiple processors. I think it is more likely to help out the pysam/htspython/simplesam projects become faster, rather than be any sort of replacement for them. I'll say that again - this project is not intended to replace pysam, htspython or simplesam! It is simply to provide python programmers a more direct level of access to the BAM data than they previously had before.
+This project has not been code-reviewed, tested, or even run on more than a handful of BAM files - however if we can get it to work reliably, it would make incorporating BAM file reading into python much simpler since there are no external dependencies to install/compile. Furthermore, initial results show it's pretty fast -- aproaching 2x faster than pysam, although this is most likely because decompression of the BAM files can be done in parallel on pybam (via pigz), utilizing multiple processors. I think it is more likely to help out the pysam/htspython/simplesam projects become faster, rather than be any sort of replacement for them. I'll say that again - this project is not intended to replace pysam, htspython or simplesam! It is simply to provide python programmers a more direct level of access to the BAM data than they previously had before.
 
 # Using pybam
 ### tl;dr:
