@@ -19,7 +19,7 @@ Pybam consists of 1 class and 1 function. The class, bgunzip, will remove the co
         >>> pure_bam_data.bytes_read
         655360
 
-So as you can see, we have already read the first 655360 bytes of the BAM file, which is more than enough to parse out the header information. Note that this is bytes read of the **compressed** BAM file, not decompressed bytes that the class will output. The .bytes_read value will automatically increase as we iterate the BAM file. You can use this if you know the size of the BAM file in advance to make pretty progress bars.
+So as you can see, we have already read the first 655360 bytes of the BAM file, which is more than enough to parse out the header information. Note that this is bytes read of the **compressed** BAM file, not decompressed bytes. The .bytes_read value will automatically increase as we iterate the BAM file. You can use this if you know the size of the BAM file in advance to make pretty progress bars.
 
         >>> print pure_bam_data.header_text
         @SQ	SN:chr1	LN:197195432	AS:mm9	SP:mouse
