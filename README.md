@@ -113,5 +113,46 @@ I have not settled on a good naming schema for the parser yet, so it may change 
         qual         : For every letter of seq there is an associated qual score from 0 to 255. I dont really know how to go from this to a proper phred value yet.
         tags         : A list, in the order they appear in the BAM file, of tag name (2-letter ID), tag type (1-letter encoding a data type), and variable amount of data as determined by the data type. Just like SAM.
 
-We can also get all of that data as it was in the BAM (without any conversion) by appending '_bam' to the end. So for example, for the raw 4-bit encoded seq data, use 'seq_bam'
+We can also get all of that data as it was in the BAM (without any conversion) by appending '_bam' to the end. So for example, for the raw 4-bit encoded seq data, use 'seq_bam'. The exception is 'bin_', which alread has a '_' at the end because 'bin' is a python keyword we dont want to use. For 'bin_' use 'bin_bam'.
 There will also be some helper functions in the future like 'read' and 'read_bam' to get the whole read's data back without specifying every little thing. This will be useful if you want to parse the bam's SAM data, but then write the whole read to disk in BAM format.
+
+So finally, to compile your own parser do something like this:
+
+        >>> my_parser = pybam.compile_parser(['seq','qname'])
+        >>>
+You can look to see what code my_parser compiled to by looking at pybam.code (although this will likely become my_parser.code in the future):
+        def parser(data_generator):
+            chunk = next(data_generator)
+            CtoPy = { 'A':'<c', 'c':'<b', 'C':'<B', 's':'<h', 'S':'<H', 'i':'<i', 'I':'<I' }
+            py4py = { 'A':  1,  'c':  1,  'C':  1,  's':  2,  'S':  2,  'i':  4 , 'I':  4  }
+            dna = '=ACMGRSVTWYHKDBN'
+            cigar_codes = 'MIDNSHP=X'
+            from array import array
+            from struct import unpack
+            p = 0
+            while True:
+                try:
+                    while len(chunk) < p+36: chunk = chunk[p:] + next(data_generator); p = 0
+                    block_size,refID,pos,l_read_name,mapq,bin_,n_cigar_op,flag,l_seq  = unpack('<iiiBBHHHi' ,chunk[p:p+24])
+                    while len(chunk) < p + 4 + block_size: chunk = chunk[p:] + next(data_generator); p = 0
+                except StopIteration: break
+                end = p + block_size + 4
+                p += 36
+                qname = chunk[p:p+l_read_name-1]
+                p += l_read_name
+                p += n_cigar_op*4
+                l_seq_bytes = -((-l_seq)//2)
+                seq = ''.join([ dna[bit4 >> 4] + dna[bit4 & 0b1111] for bit4 in array('B', chunk[p:p+l_seq_bytes]) ])
+                p = end
+                yield seq,qname
+        >>>
+        
+So now all we have to do is point our new parser to our raw BAM data generator, and we're good to go!
+
+        >>> for data in my_parser(pure_bam_data):
+        ...     print data
+        ...     break
+        ...
+        ('TTTTTTTTGTTTGTTTGTTTTTTTTTTCTGTTTCTT', 'SOLEXA1_0001:4:49:11382:21230#0')
+        
+Note that the order of the data in the data tuple is the same as the order of the string keywords we gave compile_parser.
