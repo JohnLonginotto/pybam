@@ -9,15 +9,15 @@ This project has not been code-reviewed, tested, or even run on more than a hand
 
 Pybam consists of 1 class and 1 function. The class, bgunzip, will remove the compression from a BAM file (from stdin or a file handle), parse out the header information, and become an iterable that, if used, returns large blocks of pure uncompressed BAM data.
 
-python
-Python 2.7.10 (default, Jul 14 2015, 19:46:27)
-[GCC 4.2.1 Compatible Apple LLVM 6.0 (clang-600.0.39)] on darwin
-Type "help", "copyright", "credits" or "license" for more information.
->>> import pybam
->>> pure_bam_data = pybam.bgunzip('./ENCFF001LCU.bam')
-Using gzip!
->>> pure_bam_data.bytes_read
-655360
+  python
+  Python 2.7.10 (default, Jul 14 2015, 19:46:27)
+  [GCC 4.2.1 Compatible Apple LLVM 6.0 (clang-600.0.39)] on darwin
+  Type "help", "copyright", "credits" or "license" for more information.
+  >>> import pybam
+  >>> pure_bam_data = pybam.bgunzip('./ENCFF001LCU.bam')
+  Using gzip!
+  >>> pure_bam_data.bytes_read
+  655360
 
 So as you can see, we have already read the first 655360 bytes of the BAM file, which is more than enough to parse out the header information. Note that this is bytes read of the **compressed** BAM file, not decompressed bytes that the class will output. The .bytes_read value will automatically increase as we iterate the BAM file. You can use this if you know the size of the BAM file in advance to make pretty progress bars.
 
