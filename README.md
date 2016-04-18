@@ -122,6 +122,8 @@ So finally, to compile your own parser do something like this:
         >>>
 You can look to see what code my_parser compiled to by looking at `pybam.code` (although this will likely become `my_parser.code` in the future):
 
+        >>> print pybam.code
+
         def parser(data_generator):
             chunk = next(data_generator)
             CtoPy = { 'A':'<c', 'c':'<b', 'C':'<B', 's':'<h', 'S':'<H', 'i':'<i', 'I':'<I' }
