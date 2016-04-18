@@ -130,8 +130,8 @@ class bgunzip:
             sys.stderr.write('Using pigz!\n')
         except OSError:
             try:
-                if type(self.file_handle) == str: p = subprocess.Popen(['gzip','-dc',self.file_handle], stdout=subprocess.PIPE)
-                elif type(self.file_handle) == file: p = subprocess.Popen(['gzip','-dc'],stdin=self.file_handle, stdout=subprocess.PIPE)
+                if type(self.file_handle) == str:    p = subprocess.Popen(['gzip','--stdout','--decompress','--force',self.file_handle]       , stdout=subprocess.PIPE)
+                elif type(self.file_handle) == file: p = subprocess.Popen(['gzip','--stdout','--decompress','--force'], stdin=self.file_handle, stdout=subprocess.PIPE)
                 else: print 'ERROR: I do not know how to open and read from "' + str(self.file_handle) + '"'; exit()
                 self.file_handle = p.stdout
                 sys.stderr.write('Using gzip!\n')
