@@ -86,5 +86,32 @@ Now we can iterate this class and get back pure, decompressed BAM data, starting
         35536 '292:6261#0\x00@\x02\x00\x00\x88\x88\x88\x88\x88'
         35536 '\x00@\x02\x00\x00\x88\x88\x88\x88\x88\x88\x88\x82\x11\x11\x11\x11\x11\x11\x11'
 
-As you can see, this data is pretty meaningless unless parsed from BAM to SAM. That will be done by the next part of pybam - the parser(). But there is one final point to mention here for bgunzip. The way BAM files are compressed but still randomly readable is that they are compressed into small chunks called bgzf blocks. The bgzf blocks may have no relation to where reads start and end, so do not rely on bgunzip to give you data which begins at the beginning of a read and ends at the end of a read (except, of course, for the first block which always begins at the beginning of the first read). Expect all the other chunks of decompressed data to contain partial-read data at their start and end. bgunzip has a blocks_at_a_time optional property which you can use to request X bgzf blocks instead of the default of 50 - however this only works if bgunzip does NOT use your local gzip or pigz binary to do the decompression (because then it wont see the blocks at all). If bgunzip IS using gzip or pigz, it will default to reading 35536 bytes from their stdout at a time (which is what we're seeing above). There is no significance in the number 35536, thats just where my fingers fell at the time.
+As you can see, this data is pretty meaningless unless parsed from BAM to SAM. That will be done by the next part of pybam - the compile_parser(). But there is one final point to mention here for bgunzip. The way BAM files are compressed but still randomly readable is that they are compressed into small chunks called bgzf blocks. The bgzf blocks may have no relation to where reads start and end, so do not rely on bgunzip to give you data which begins at the beginning of a read and ends at the end of a read (except, of course, for the first block which always begins at the beginning of the first read). Expect all the other chunks of decompressed data to contain partial-read data at their start and end. bgunzip has a blocks_at_a_time optional property which you can use to request X bgzf blocks instead of the default of 50 - however this only works if bgunzip does NOT use your local gzip or pigz binary to do the decompression (because then it wont see the blocks at all). If bgunzip IS using gzip or pigz, it will default to reading 35536 bytes from their stdout at a time (which is what we're seeing above). There is no significance in the number 35536, and its likely to change to a more aesthetically pleasing number in the near future.
 
+### compile_parser
+Now things get a little more interesting :)
+
+There are 11 required fields/columns in a BAM file: QNAME, FLAG, RNAME, POS, MAPQ, CIGAR, RNEXT, PNEXT, TLEN, SEQ, QUAL -- and a optional number of TAGs. Obviously, the more of this data we want to convert from binary BAM to readable SAM, the more work we're going to have to do. On all occassions that i've wanted to read a BAM file, I want to read the same columns of data for every single read in the file (for filtering, calculating some statistic, etc), and so I'd like to be able to tell my parser what it should convert to SAM, and what it should just skip over. We do exactly this by running compile_parser() with a list/tuple of strings that tell it what to grab, and what to convert.
+
+I have not settled on a good naming schema for the parser yet, so it may change in the future. Right now these are the following options:
+
+        block_size   : A BAM-specific thing. Number of bytes in the read, -4 because block_size itself takes up 4 bytes.
+        refID        : Chromosome names aren't stored for every read in BAM (because they can be very long ASCII which wastes space). Instead refID is used, which is a number that can be used to look up the chromosome name from the chromosome list (from the header) 
+        pos          : This is the same as the SAM value, except its 0-based not 1-based. I have no idea why. Since pybam is a BAM reader, you are expected to +1 to your positions yourself - however, this may change in the future if people really just want SAM out.
+        l_read_name  : BAM-specific thing. Length of the QNAME +1
+        mapq         : Same as SAM.
+        bin_         : BAM-specific thing. Somehow gets calculated from the position. In all honesty, i have no idea what it does or why its needed...
+        n_cigar_op   : BAM-specific thing. Number of cigar operations used.
+        flag         : Same as SAM. Note that this is actually a 16-bit value, even though there are currently only 12 official flag descriptions. That means 4 more are up for grabs! #read_underappreciated #first_in_heart #lactose_intolerant, etc.
+        l_seq        : BAM-specific thing. Length of the sequencing.
+        next_refID   : Just like refID, but for the next read (ie. mate)
+        next_pos     : Just like pos, but for the next read (ie. mate)
+        tlen         : Just like SAM
+        qname        : The name of the read. Just like SAM. Although it makes me uncomfortable, the NUL byte ('\x00') on the end has also been removed, to make it just like the SAM data.
+        cigar        : Parsed to a list of tuples, where the first letter is the CIGAR operation, and the second is the number of bases that have that operation - essentially the same as Pysam/etc.
+        seq          : Parsed to give the DNA sequence. Just like SAM, however, if there are an odd number of DNA bases in SEQ, the last letter is a '=', due to padding. Considering removing this.  
+        qual         : For every letter of seq there is an associated qual score from 0 to 255. I dont really know how to go from this to a proper phred value yet.
+        tags         : A list, in the order they appear in the BAM file, of tag name (2-letter ID), tag type (1-letter encoding a data type), and variable amount of data as determined by the data type. Just like SAM.
+
+We can also get all of that data as it was in the BAM (without any conversion) by appending '_bam' to the end. So for example, for the raw 4-bit encoded seq data, use 'seq_bam'
+There will also be some helper functions in the future like 'read' and 'read_bam' to get the whole read's data back without specifying every little thing. This will be useful if you want to parse the bam's SAM data, but then write the whole read to disk in BAM format.
