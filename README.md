@@ -174,4 +174,4 @@ So now all we have to do is point our new parser to our raw BAM data generator, 
         ...
         ('TTTTTTTTGTTTGTTTGTTTTTTTTTTCTGTTTCTT', 'SOLEXA1_0001:4:49:11382:21230#0')
         
-Note that the order of the data in the data tuple is the same as the order of the string keywords we gave compile_parser.
+Note that the order of the data in the data tuple is the same as the order of the string keywords we gave compile_parser. Soon this is likely to become a named tuple as it probably always should have been.
