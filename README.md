@@ -120,7 +120,7 @@ So finally, to compile your own parser do something like this:
 
         >>> my_parser = pybam.compile_parser(['seq','qname'])
         >>>
-You can look to see what code my_parser compiled to by looking at pybam.code (although this will likely become my_parser.code in the future):
+You can look to see what code my_parser compiled to by looking at `pybam.code` (although this will likely become `my_parser.code` in the future):
 
         def parser(data_generator):
             chunk = next(data_generator)
