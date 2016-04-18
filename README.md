@@ -6,6 +6,24 @@ Very simple, 100% python, BAM file reader.
 This project has not been code-reviewed, tested, or even run on more than a handful of BAM files - however if we can get it to work reliably, it would make incorporating BAM file reading into python much simpler since there are no external dependencies to install/compile. Furthermore, initial results show it's pretty fast -- although this is most likely because decompression of the BAM files can be done in parallel on pybam (via pigz), utilizing multiple processors. I think it is more likely to help out the pysam/htspython/simplesam projects become faster, rather than be any sort of replacement for them. I'll say that again - this project is not intended to replace pysam, htspython or simplesam! It is simply to provide python programmers a more direct level of access to the BAM data than they previously had before.
 
 # Using pybam
+### tl;dr:
+
+        >>> import pybam
+        >>> parser = pybam.compile_parser(['seq','qname'])
+        >>> for read in parser(pybam.bgunzip('./ENCFF001LCU.bam')):
+        ...     print read
+        ...
+        ('AAAGTTTTTCTGCTTGGGGAAGAAGTTGCCCAGTAT', 'SOLEXA1_0001:4:9:2551:12816#0')
+        ('AGTTTTTCTGCTTGGGGAAGAAGTTGCCCAGTATGA', 'SOLEXA1_0001:4:28:12371:18201#0')
+        ('GTTTTTCTGCTTGGGGAAGAAGTTGCCCAGTATGAC', 'SOLEXA1_0001:4:10:9456:17693#0')
+        ('GTTTTTCTGCTTGGGGAAGAAGTTGCCCAGTATGAC', 'SOLEXA1_0001:4:14:1160:1905#0')
+        ('GTTTTTCTGCTTGGGGAAGAAGTTGCCCAGTATGAC', 'SOLEXA1_0001:4:3:12593:7870#0')
+        ('GTTTTTCTGCTTGGGGAAGAAGTTGCCCAGTATGAC', 'SOLEXA1_0001:4:72:1174:16008#0')
+        ('GTTTTTCTGCTTGGGGAAGAAGTTGCCCAGTATGAC', 'SOLEXA1_0001:4:72:16064:16696#0')
+        ('GTTTTTCTGCTTGGGGAAGAAGTTGCCCAGTATGAC', 'SOLEXA1_0001:4:72:6804:8913#0')
+        ('GTTTTTCTGCTTGGGGAAGAAGTTGCCCAGTATGAC', 'SOLEXA1_0001:4:73:14207:10900#0')
+        ('GTTTTTCTGCTTGGGGAAGAAGTTGCCCAGTATGAC', 'SOLEXA1_0001:4:77:16154:2520#0')
+        ...
 
 ### bgunzip
 Pybam consists of 1 class and 1 function. The class, `bgunzip()`, will remove the compression from a BAM file (from sys.stdin, an open file handle, or file path as a string), parse out the header information, and become an iterable that, if used, returns large blocks of pure uncompressed BAM data.
