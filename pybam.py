@@ -342,7 +342,7 @@ def parser(data_generator):
     if 'seq'         in deps: unpack += "        seq = ''.join([ dna[bit4 >> 4] + dna[bit4 & 0b1111] for bit4 in array('B', chunk[p:p+l_seq_bytes]) ])\n"
     if 'seq_bam'     in deps: unpack += "        seq_bam = chunk[p:p+l_seq_bytes]\n"
     if 'seq_skip'    in deps: unpack += "        p += l_seq_bytes\n"
-    if 'qual'        in deps: unpack += "        qual = chunk[p:p+l_seq]\n"
+    if 'qual'        in deps: unpack += "        qual = ''.join([ chr(ord(q)+33) for q in chunk[p:p+l_seq] ])\n"
     if 'qual_bam'    in deps: unpack += "        qual_bam = chunk[p:p+l_seq]\n"
     if 'qual_skip'   in deps: unpack += "        p += l_seq\n"
     if 'tags_bam'    in deps: unpack += "        tags_bam = chunk[p:end]\n"
