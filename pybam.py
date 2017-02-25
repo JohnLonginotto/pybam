@@ -122,16 +122,17 @@ class bgunzip:
     def next(self): return next(self._iterator)
 
     def _generator(self):
+        DEVNULL = open(os.devnull, 'wb')
         try:
-            if type(self.file_handle) == str: p = subprocess.Popen(['pigz','-dc',self.file_handle], stdout=subprocess.PIPE)
-            elif type(self.file_handle) == file: p = subprocess.Popen(['pigz','-dc'],stdin=self.file_handle, stdout=subprocess.PIPE)
+            if type(self.file_handle) == str: p = subprocess.Popen(['pigz','-dc',self.file_handle], stdout=subprocess.PIPE, stderr=DEVNULL)
+            elif type(self.file_handle) == file: p = subprocess.Popen(['pigz','-dc'],stdin=self.file_handle, stdout=subprocess.PIPE, stderr=DEVNULL)
             else: print 'ERROR: I do not know how to open and read from "' + str(self.file_handle) + '"'; exit()
             self.file_handle = p.stdout
             sys.stderr.write('Using pigz!\n')
         except OSError:
             try:
-                if type(self.file_handle) == str:    p = subprocess.Popen(['gzip','--stdout','--decompress','--force',self.file_handle]       , stdout=subprocess.PIPE)
-                elif type(self.file_handle) == file: p = subprocess.Popen(['gzip','--stdout','--decompress','--force'], stdin=self.file_handle, stdout=subprocess.PIPE)
+                if type(self.file_handle) == str:    p = subprocess.Popen(['gzip','--stdout','--decompress','--force',self.file_handle]       , stdout=subprocess.PIPE, stderr=DEVNULL)
+                elif type(self.file_handle) == file: p = subprocess.Popen(['gzip','--stdout','--decompress','--force'], stdin=self.file_handle, stdout=subprocess.PIPE, stderr=DEVNULL)
                 else: print 'ERROR: I do not know how to open and read from "' + str(self.file_handle) + '"'; exit()
                 self.file_handle = p.stdout
                 sys.stderr.write('Using gzip!\n')
@@ -211,6 +212,7 @@ class bgunzip:
                 cache = []
                 blocks_left_to_grab = self.blocks_at_a_time
         self.file_handle.close()
+        DEVNULL.close()
         if cache != '': yield ''.join(cache)
 
 
