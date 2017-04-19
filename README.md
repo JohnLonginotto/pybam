@@ -1,44 +1,51 @@
 # pybam
 #### A simple, 100% python, BAM file reader.
 
-This project has not been code-reviewed, tested, or even run on more than a handful of BAM files - however if we can get it to work reliably, it would make incorporating BAM file reading into python much simpler since there are no external dependencies to install/compile. Furthermore, initial results show it's pretty fast -- aproaching 2x faster than pysam, although this is most likely because decompression of the BAM files can be done in parallel on pybam (via pigz), utilizing multiple processors. This project is not intended to replace pysam, htspython or simplesam though! Those are all fully-fledged projects with great programmers behind them. pybam is really there to act as a simple way to incorporate BAM-reading into code for other python programmers, since you can literally just copy-paste this module into your own code and be 100% free of dependencies, version incompatibilities, checks to see if users have pysam/htspython/simplesam installed, etc etc. It is simply just here to provide python programmers a more direct level of access to the BAM data than they previously had before.
+pybam is a fast all-python module than you can copy-paste into your code to read a BAM file. Upon loading a BAM file, pybam will parse the header information, and act as a generator to return alignment/read information sequentially as it walks through the file. If you do not need to use BAM indexes, pybam is probably the fastest and simplest BAM parser out there, particularly if run under PyPy.
+
 
 # Using pybam
 ### tl;dr:
 
         >>> import pybam
-        >>> parser = pybam.compile_parser(['seq','qname'])
-        >>> for read in parser(pybam.bgunzip('./ENCFF001LCU.bam')):
+        >>> bam_file = pybam.read('./ENCFF001LCU.bam')
+        >>> for read in bam_file:
         ...     print read
         ...
-        ('AAAGTTTTTCTGCTTGGGGAAGAAGTTGCCCAGTAT', 'SOLEXA1_0001:4:9:2551:12816#0')
-        ('AGTTTTTCTGCTTGGGGAAGAAGTTGCCCAGTATGA', 'SOLEXA1_0001:4:28:12371:18201#0')
-        ('GTTTTTCTGCTTGGGGAAGAAGTTGCCCAGTATGAC', 'SOLEXA1_0001:4:10:9456:17693#0')
-        ('GTTTTTCTGCTTGGGGAAGAAGTTGCCCAGTATGAC', 'SOLEXA1_0001:4:14:1160:1905#0')
-        ('GTTTTTCTGCTTGGGGAAGAAGTTGCCCAGTATGAC', 'SOLEXA1_0001:4:3:12593:7870#0')
-        ('GTTTTTCTGCTTGGGGAAGAAGTTGCCCAGTATGAC', 'SOLEXA1_0001:4:72:1174:16008#0')
-        ('GTTTTTCTGCTTGGGGAAGAAGTTGCCCAGTATGAC', 'SOLEXA1_0001:4:72:16064:16696#0')
-        ('GTTTTTCTGCTTGGGGAAGAAGTTGCCCAGTATGAC', 'SOLEXA1_0001:4:72:6804:8913#0')
-        ('GTTTTTCTGCTTGGGGAAGAAGTTGCCCAGTATGAC', 'SOLEXA1_0001:4:73:14207:10900#0')
-        ('GTTTTTCTGCTTGGGGAAGAAGTTGCCCAGTATGAC', 'SOLEXA1_0001:4:77:16154:2520#0')
+        SOLEXA1_0001:4:31:10763:18817#0	16	chr1	3073974	0	36M	*	0	0	CTGTTGAAAAACCCAAAAAAAAAAAAAAAAAAAAAA	#################################?:8	NM:i:2	NH:i:18	CC:Z:chr10	CP:i:15165270
+        SOLEXA1_0001:4:47:4094:20053#0	0	chr1	3083481	0	36M	*	0	0	GTGCCCTTTAAGTTGAAAATCTTCATTGTCATCAAC	CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCB	NM:i:2	NH:i:21	CC:Z:=	CP:i:98646994
+        SOLEXA1_0001:4:41:19157:12644#0	16	chr1	3086596	0	36M	*	0	0	TGCCAGGGACTAGCAAACACAGAAGTGGATGCTGCC	####################################	NM:i:2	NH:i:21	CC:Z:=	CP:i:69028922
+        SOLEXA1_0001:4:20:2270:14535#0	16	chr1	3094868	0	36M	*	0	0	AAGAAAAAGGAGAAGAAAAAGAAAAAAAAAAAAAAA	##############################BBBBBB	NM:i:2	NH:i:6	CC:Z:chr3	CP:i:128579678
+        SOLEXA1_0001:4:36:17421:14269#0	16	chr1	3094871	0	36M	*	0	0	AAAAAAGAAAAGAAAAAAAAAAAGAAAAAAAAAGAG	####################################	NM:i:2	NH:i:21	CC:Z:chr10	CP:i:5884884
+        SOLEXA1_0001:4:31:1795:18037#0	16	chr1	3094893	0	36M	*	0	0	AGAAAAAAAAAGAGAAAAAGAAAAAAAAAAAAAAAA	#################################AA@	NM:i:2	NH:i:32	CC:Z:=	CP:i:25751008
+        SOLEXA1_0001:4:12:13547:10630#0	0	chr1	3117546	0	36M	*	0	0	TTTTTTTTTTTTTTTTTTTTTTTTGGGTGGTTACCT	CCCCCCBBBBBBBBBBBBBB################	NM:i:2	NH:i:14	CC:Z:chr10	CP:i:57781144
+        SOLEXA1_0001:4:86:6040:10633#0	0	chr1	3117547	1	36M	*	0	0	TTTTTTTTTTTTTTTTTTTTTTTGGGGGTTTAGCTT	CCCCCC@B@@@@B@@@@@@@@@59D@@#########	NM:i:2	NH:i:3	CC:Z:chr14	CP:i:115576875
+        SOLEXA1_0001:4:26:13139:15177#0	0	chr1	3117548	3	36M	*	0	0	TTTTTTTTTTTTTTTTTTTTTTGGGTGTTTGGCTTC	CCBAAA<>:>7<<>>7:>>@################	NM:i:2	NH:i:2	CC:Z:chr6	CP:i:148390328
+        SOLEXA1_0001:4:2:4997:13484#0	0	chr1	3117549	0	36M	*	0	0	TTTTTTTTTTTTTTTTTTTTTGGGTGGTTGGCTTTT	CCCCCCBBBBBBBBB@@@>@47;'?###########	NM:i:2	NH:i:13	CC:Z:chr10	CP:i:18121217
         ...
 
-### bgunzip
-Pybam consists of 1 class and 1 function. The class, `bgunzip()`, will remove the compression from a BAM file (from sys.stdin, an open file handle, or file path as a string), parse out the header information, and become an iterable that, if used, returns large blocks of pure uncompressed BAM data.
+### Header Info
+Pybam can parse data from a BAM file's header:
 
-        python
-        Python 2.7.10 (default, Jul 14 2015, 19:46:27)
-        [GCC 4.2.1 Compatible Apple LLVM 6.0 (clang-600.0.39)] on darwin
-        Type "help", "copyright", "credits" or "license" for more information.
-        >>> import pybam
-        >>> pure_bam_data = pybam.bgunzip('./ENCFF001LCU.bam')
-        Using gzip!
-        >>> pure_bam_data.bytes_read
-        655360
+        >>>> import pybam
+        >>>> bam = pybam.read('../ENCFF001LCU.bam')
 
-So as you can see, we have already read the first 655360 bytes of the BAM file, which is more than enough to parse out the header information. Note that this is bytes read of the **compressed** BAM file, not decompressed bytes. The .bytes_read value will automatically increase as we iterate the BAM file. You can use this if you know the size of the BAM file in advance to make pretty progress bars.
+        >>>> bam.file_name
+        'ENCFF001LCU.bam'
 
-        >>> print pure_bam_data.header_text
+        >>>> bam.file_directory
+        '/Users/John/Desktop'
+
+        >>>> bam.file_decompressor
+        'pigz'
+
+        >>>> bam.file_chromosomes
+        ['chr1', 'chr2', 'chr3', 'chr4', 'chr5', 'chr6', 'chr7', 'chr8', 'chr9', 'chr10', 'chr11', 'chr12', 'chr13', 'chr14', 'chr15', 'chr16', 'chr17', 'chr18', 'chr19', 'chrX', 'chrY']
+
+        >>>> bam.file_chromosome_lengths
+        {'chr1': 197195432, 'chr2': 181748087, 'chr3': 159599783, 'chr4': 155630120, 'chr5': 152537259, 'chr6': 149517037, 'chr7': 152524553, 'chr8': 131738871, 'chr9': 124076172, 'chr10': 129993255, 'chr11': 121843856, 'chr12': 121257530, 'chr13': 120284312, 'chr14': 125194864, 'chr15': 103494974, 'chr16': 98319150, 'chr17': 95272651, 'chr18': 90772031, 'chr19': 61342430, 'chrX': 166650296, 'chrY': 15902555}
+
+        >>>> print bam.file_header
         @SQ	SN:chr1	LN:197195432	AS:mm9	SP:mouse
         @SQ	SN:chr2	LN:181748087	AS:mm9	SP:mouse
         @SQ	SN:chr3	LN:159599783	AS:mm9	SP:mouse
@@ -60,118 +67,174 @@ So as you can see, we have already read the first 655360 bytes of the BAM file, 
         @SQ	SN:chr19	LN:61342430	AS:mm9	SP:mouse
         @SQ	SN:chrX	LN:166650296	AS:mm9	SP:mouse
         @SQ	SN:chrY	LN:15902555	AS:mm9	SP:mouse
-        >>>
 
-This is the ASCII portion of the BAM header. On Page 13 of the SAM spec (https://samtools.github.io/hts-specs/SAMv1.pdf) that would be the third row called 'text'.
+        >>>> with open('newbam.bam','wb') as outfile:
+        ....     outfile.write(bam.file_binary_header)
 
-        >>> print pure_bam_data.chromosomes_from_header
-        ['chr1', 'chr2', 'chr3', 'chr4', 'chr5', 'chr6', 'chr7', 'chr8', 'chr9', 'chr10', 'chr11', 'chr12', 'chr13', 'chr14', 'chr15', 'chr16', 'chr17', 'chr18', 'chr19', 'chrX', 'chrY']
+        >>>> bam.file_bytes_read
+        1161
 
-This is literally just a parsing of the above ASCII text, from 'SN:' to 'LN:', to get the chromosome names in the order they appear in the header.
+        >>>> bam.file_alignments_read
+        0
 
-        >>> print pure_bam_data.chromosome_names
-        ['chr1', 'chr2', 'chr3', 'chr4', 'chr5', 'chr6', 'chr7', 'chr8', 'chr9', 'chr10', 'chr11', 'chr12', 'chr13', 'chr14', 'chr15', 'chr16', 'chr17', 'chr18', 'chr19', 'chrX', 'chrY']
+### Read Info
+pybam's read return's a generator-class, meaning that every time it is iterated a new read is avaliable for parsing using special parsing codes:
+        >>>> read = next(bam)
+        >>>> print read
+        SOLEXA1_0001:4:49:11382:21230#0	0	chr1	3000743	0	36M	*	0	0	TTTTTTTTGTTTGTTTGTTTTTTTTTTCTGTTTCTT	####################################	NM:i:2	NH:i:13	CC:Z:chr15	CP:i:75293507
 
-Here the data for the chromosome names comes from the *binary* portion of the BAM header - called "name" in the SAM spec on row 6. Of course it should match the names and orders of the chromosomes in the ASCII portion of the header, but theres no need for it to, and samtools will do no checking to make sure that is the case. Since pybam originally comes from another (unpublished) project that lets you reorder/remaster BAM file headers on-the-fly, pybam will always check these two are the same, and if they're not, report an error.
+        >>>> print read.sam_seq
+        TTTTTTTTGTTTGTTTGTTTTTTTTTTCTGTTTCTT
 
-        >>> print pure_bam_data.chromosome_lengths
-        [197195432, 181748087, 159599783, 155630120, 152537259, 149517037, 152524553, 131738871, 124076172, 129993255, 121843856, 121257530, 120284312, 125194864, 103494974, 98319150, 95272651, 90772031, 61342430, 166650296, 15902555]
+        >>>> print read.sam_qname
+        SOLEXA1_0001:4:49:11382:21230#0
 
-This data is also from the binary portion of the header, called l_ref in the SAM spec on row 7. You could parse it out of the ASCII header to see if it matches up too, but currently that isnt done.
+        >>>> print bam.sam_qname          # "read" was just a copy of "bam". They are actually the same thing.
+        SOLEXA1_0001:4:49:11382:21230#0
 
-        >>> print pure_bam_data.original_binary_header[:3]
-        BAM
-
-.original_binary_header is the byte-for-byte BAM header, right up until the first byte of the first read. Above I have only printed the first 3 characters, which for a valid BAM file should always be "BAM". The rest of the header is a mix of ASCII and unprintable binary. You can write this out to disk if you want to make a new valid BAM file header, but with some other read data in the file.
-
-Now we can iterate this class and get back pure, decompressed BAM data, starting from the first read in the file, until the last read in the file:
-
-        >>> for counter,data in enumerate(pure_bam_data):
-        ...     print len(data),repr(data[0:20])
-        ...     if counter == 10: break
-        ...
-        654199 '\x92\x00\x00\x00\x00\x00\x00\x00\xa6\xc9-\x00 \x00\x00\x13\x01\x00\x00\x00'
-        35536 '\x00\x00\xff\xff\xff\xff\xff\xff\xff\xff\x00\x00\x00\x00SOLEXA'
-        35536 '\x11\x11\x11\x11\x11\x11\x02\x02\x02\x02\x02\x02\x02\x02\x02\x02\x02\x02\x02\x02'
-        35536 'AAD\x12""""""""""""""""'
-        35536 '""""""""""NMC\x01NHC\x01\x81\x00'
-        35536 '"""""""""""""""""""N'
-        35536 '\x00\x00\xff\xff\xff\xff\xff\xff\xff\xff\x00\x00\x00\x00SOLEXA'
-        35536 '\xba\x13\x01\x00\x10\x00$\x00\x00\x00\xff\xff\xff\xff\xff\xff\xff\xff\x00\x00'
-        35536 '\x1f\x1f!!\x1f\x1f\x14\x0e\x13 \x02\x02\x02\x02\x02\x02\x02\x02NM'
-        35536 '292:6261#0\x00@\x02\x00\x00\x88\x88\x88\x88\x88'
-        35536 '\x00@\x02\x00\x00\x88\x88\x88\x88\x88\x88\x88\x82\x11\x11\x11\x11\x11\x11\x11'
-
-As you can see, this data is pretty meaningless unless parsed from BAM to SAM. That will be done by the next part of pybam - the compile_parser(). But there is one final point to mention here for bgunzip. The way BAM files are compressed but still randomly readable is that they are compressed into small chunks called bgzf blocks. The bgzf blocks may have no relation to where reads start and end, so do not rely on bgunzip to give you data which begins at the beginning of a read and ends at the end of a read (except, of course, for the first block which always begins at the beginning of the first read). Expect all the other chunks of decompressed data to contain partial-read data at their start and end. bgunzip has a blocks_at_a_time optional property which you can use to request X bgzf blocks instead of the default of 50 - however this only works if bgunzip does NOT use your local gzip or pigz binary to do the decompression (because then it wont see the blocks at all). If bgunzip IS using gzip or pigz, it will default to reading 35536 bytes from their stdout at a time (which is what we're seeing above). There is no significance in the number 35536, and its likely to change to a more aesthetically pleasing number in the near future.
-
-### compile_parser
-Now things get a little more interesting :)
-
-There are 11 required fields/columns in a BAM file: QNAME, FLAG, RNAME, POS, MAPQ, CIGAR, RNEXT, PNEXT, TLEN, SEQ, QUAL -- and a optional number of TAGs. Obviously, the more of this data we want to convert from binary BAM to readable SAM, the more work we're going to have to do. On all occassions that i've wanted to read a BAM file, I want to read the same columns of data for every single read in the file (for filtering, calculating some statistic, etc), and so I'd like to be able to tell my parser what it should convert to SAM, and what it should just skip over. We do exactly this by running compile_parser() with a list/tuple of strings that tell it what to grab, and what to convert.
-
-I have not settled on a good naming schema for the parser yet, so it may change in the future. Right now these are the following options:
-
-        block_size   : A BAM-specific thing. Number of bytes in the read, -4 because block_size itself takes up 4 bytes.
-        refID        : Chromosome names aren't stored for every read in BAM (because they can be very long ASCII which wastes space). Instead refID is used, which is a number that can be used to look up the chromosome name from the chromosome list (from the header) 
-        pos          : This is the same as the SAM value, except its 0-based not 1-based. I have no idea why. Since pybam is a BAM reader, you are expected to +1 to your positions yourself - however, this may change in the future if people really just want SAM out.
-        l_read_name  : BAM-specific thing. Length of the QNAME +1
-        mapq         : Same as SAM.
-        bin_         : BAM-specific thing. Somehow gets calculated from the position. In all honesty, i have no idea what it does or why its needed...
-        n_cigar_op   : BAM-specific thing. Number of cigar operations used.
-        flag         : Same as SAM. Note that this is actually a 16-bit value, even though there are currently only 12 official flag descriptions. That means 4 more are up for grabs! #read_underappreciated #first_in_heart #lactose_intolerant, etc.
-        l_seq        : BAM-specific thing. Length of the sequencing.
-        next_refID   : Just like refID, but for the next read (ie. mate)
-        next_pos     : Just like pos, but for the next read (ie. mate)
-        tlen         : Just like SAM
-        qname        : The name of the read. Just like SAM. Although it makes me uncomfortable, the NUL byte ('\x00') on the end has also been removed, to make it just like the SAM data.
-        cigar        : Parsed to a list of tuples, where the first letter is the CIGAR operation, and the second is the number of bases that have that operation - essentially the same as Pysam/etc.
-        seq          : Parsed to give the DNA sequence. Just like SAM, however, if there are an odd number of DNA bases in SEQ, the last letter is a '=', due to padding. Considering removing this.  
-        qual         : For every letter of seq there is an associated qual score from 0 to 255. I dont really know how to go from this to a proper phred value yet.
-        tags         : A list, in the order they appear in the BAM file, of tag name (2-letter ID), tag type (1-letter encoding a data type), and variable amount of data as determined by the data type. Just like SAM.
-
-We can also get all of that data as it was in the BAM (without any conversion) by appending "\_bam" to the end. So for example, for the raw 4-bit encoded seq data, use 'seq_bam'. The exception is 'bin\_', which alread has a '\_' at the end because 'bin' is a python keyword we dont want to use. For 'bin\_' use 'bin_bam'.
-There will also be some helper functions in the future like 'read' and 'read_bam' to get the whole read's data back without specifying every little thing. This will be useful if you want to parse the file's SAM data, but then write the whole read to disk in BAM format.
-
-So finally, to compile your own parser do something like this:
-
-        >>> my_parser = pybam.compile_parser(['seq','qname'])
-        >>>
-You can look to see what code my_parser compiled to by looking at `pybam.code` (although this will likely become `my_parser.code` in the future):
-
-        >>> print pybam.code
-
-        def parser(data_generator):
-            chunk = next(data_generator)
-            CtoPy = { 'A':'<c', 'c':'<b', 'C':'<B', 's':'<h', 'S':'<H', 'i':'<i', 'I':'<I' }
-            py4py = { 'A':  1,  'c':  1,  'C':  1,  's':  2,  'S':  2,  'i':  4 , 'I':  4  }
-            dna = '=ACMGRSVTWYHKDBN'
-            cigar_codes = 'MIDNSHP=X'
-            from array import array
-            from struct import unpack
-            p = 0
-            while True:
-                try:
-                    while len(chunk) < p+36: chunk = chunk[p:] + next(data_generator); p = 0
-                    block_size,refID,pos,l_read_name,mapq,bin_,n_cigar_op,flag,l_seq  = unpack('<iiiBBHHHi' ,chunk[p:p+24])
-                    while len(chunk) < p + 4 + block_size: chunk = chunk[p:] + next(data_generator); p = 0
-                except StopIteration: break
-                end = p + block_size + 4
-                p += 36
-                qname = chunk[p:p+l_read_name-1]
-                p += l_read_name
-                p += n_cigar_op*4
-                l_seq_bytes = -((-l_seq)//2)
-                seq = ''.join([ dna[bit4 >> 4] + dna[bit4 & 0b1111] for bit4 in array('B', chunk[p:p+l_seq_bytes]) ])
-                p = end
-                yield seq,qname
-        >>>
+        >>>> for x in range(10):
+        ....     _ = next(bam)
+        ....     print bam.sam_seq
+        ....
+        GGTCCAAACACCCAAAAAAAAAAAAAAAAAAAAAAA
+        TCAAATCAGCCAAAAAAAAAAAAAAAAAAAAAAAAA
+        TGCAAGCAGCCAAAAAAAAAAAAAAAAAAAAAAAAA
+        TCCAAACTCCCAAAAAAAAAAAAAAAAAAAAAAAAA
+        CAAACAGCCAAAAACAAAAAAAAAAAAAAAAAAAAN
+        AAAACAGCCAAAAAAACAAAAAAAAAAAAAAAAAAA
+        CAAACAGCCCAAAGAAAAAAAAAAAAAAAAAAAAAA
+        AAACAGCCAAAGGAAAAAAAAAAAAAAAAAAAAAAA
+        AAACCGCCAAAAAAGAAAAAAAAAAAAAAAAAAAAA
+        AAACAGCCCCAAAAAAAAAAAAAAAAAAAAAAAAAA
         
-So now all we have to do is point our new parser to our raw BAM data generator, and we're good to go!
+### All Parse Codes:
+        File data:
+            [ Immediately avalible after opening a file with pybam.read ]
+            Prefixed with "file_", these properties tell you something about the BAM file itself:
+            file_bytes_read         - A running counter of decompressed BAM bytes read. Note that this is not the same as compressed bytes read, which is not currently calculated. Counter incremented in blocks as the file is read in blocks. Useful for status bars if the number of decompressed bytes is known in advance. Unfortunately, while the BAM format does technically have a mechanism for storing the uncompressed size of the BAM file, it is only reliable for files less than 4.3Gb bytes in size, so not provided.
+            file_alignments_read    - A running counter of BAM alignments/"reads" parsed so far. Useful for status bars if the number of reads are known in advance. Unfortunately, in the BAM format, there is no way to know in advance how many alignments there are in the file. It must all be read first.
 
-        >>> for data in my_parser(pure_bam_data):
-        ...     print data
-        ...     break
-        ...
-        ('TTTTTTTTGTTTGTTTGTTTTTTTTTTCTGTTTCTT', 'SOLEXA1_0001:4:49:11382:21230#0')
-        
-Note that the order of the data in the data tuple is the same as the order of the string keywords we gave compile_parser. Soon this is likely to become a named tuple as it probably always should have been.
+            file_header             - The ASCII header from the BAM file (the output of "samtools view -H")
+            file_binary_header      - The original binary header, i.e. all the bytes up until the first alignment entry ("read"). Useful when making a new BAM file the lazy way by copy/pasting an existing header.
+            file_chromosomes        - The chromosome names from the binary header of the BAM file
+            file_chromosome_lengths - The chromosome lengths from the binary header of the BAM file
+
+            file_name               - The file name of the BAM file, or '<stdin>' if reading from stdin.
+            file_directory          - The directory of the BAM file, or the current working directory if reading from stdin.
+            file_decompressor       - The decompression program used (pybam,pigz,gzip,internal)
+
+        BAM/SAM data:
+            After at least 1 alignment has been parsed, the sam/bam properties can be used to pull out information from the BAM file one entry at a time.
+            Alignments are parsed whenever the pybam.read() object is iterated, i.e. "my_parsed_bam = pybam.read(my_bam)" will not parse any alignments, but as soon as the BAM
+            is iterated with either "next(my_parsed_bam)" or "for read in my_parsed_bam:" then the sam/bam properties can be accessed via either my_parsed_bam.X or read.x respectively.
+            sam              - Ideally as close to what samtools would print for the current entry if viewed via "samtools view"
+            bam              - All the bytes that make up the current entry, still in binary just as they were in the BAM file. Useful when creating a new BAM file of filtered alignments.
+            sam_qname        - The QNAME (Fragment ID) of the alignment [first column in a SAM file]
+            bam_qname        - The QNAME data directly from the BAM file, which is essentially the same as sam_qname but with a NUL byte on the end.
+            sam_flag         - The FLAG number of the alignment [second column in a SAM file]
+            bam_flag         - The original bytes before decoding to give the FLAG value.
+            sam_refID        - The chormosome ID (not the same as the name!) for the current entry. Chromosome names are stored in the BAM header (file_chromosomes), NOT in the alignments
+                               as thus to convert a refID to an actual chromosome name, one needs to do my_parsed_bam.file_chromosomes[read.sam_refID]. But for comparisons, using the refID
+                               is much faster that using the actual chromosome name (for example, when reading through a sorted BAM file and looking for where last_refID != read.sam_refID)
+                               Note that this value is negative when the alignment is not aligned, and thus one must not perform my_parsed_bam.file_chromosomes[read.sam_refID] without checking
+                               that the value is positive first.
+            sam_rname        - A method that does actually give the chromosome name (using file_chromosomes[sam_refID]). Will return "*" for negative values. [third column in a SAM file]
+            bam_refID        - The original binary bytes before decoding to sam_refID
+            sam_pos1         - The 1-based position of the alignment. Note that in SAM format values less than 1 are converted to '0' for "no data" and sam_pos1 will also do 
+                               this. [fourth column in a SAM file]
+            sam_pos0         - The 0-based position of the alignment. Note that in SAM all positions are 1-based, but in BAM they are stored as 0-based. Unlike sam_pos1, negative
+                               values are kept as negative values here, essentially giving you the decoded value as it was stored in the BAM.
+            bam_pos          - The original bytes before decoding to sam_pos0.
+            sam_mapq         - The Mapping Quality of the current alignment [fifth column in a SAM file]
+            bam_mapq         - The original binary for the above before decoding.
+            sam_cigar_string - The CIGAR string, as per the SAM format. Allowed values are "MIDNSHP=X". [sixth column in a SAM file]
+            sam_cigar_list   - A list of tuples with 2 values per tuple: the number of bases with the CIGAR value, and the CIGAR value. Faster to calculate than sam_cigar_string.
+            bam_cigar        - All the bytes needed to make the CIGAR field, as it was in the original BAM file.
+            sam_next_refID   - The sam_refID of the alignment's mate (if any). Note that as per sam_refID, this value can be negative and is not the chromosome name.
+            sam_rnext        - The chromosome name of the alignment's mate (if any). Value is "*" if unmapped. Note that in a SAM file this value is "=" if it is the same as the
+                               sam_rname, however pybam will only do this is the user prints the whole SAM entry with "sam". [seventh column in a SAM file]
+            bam_next_refID   - The original binary bytes before decoding to sam_next_refID
+            sam_pnext1       - The 1-based position of the alignment's mate. Note that in SAM format values less than 1 are converted to '0' for "no data" and sam_pnext1 will also do 
+                               this. [eigth column in a SAM file]
+            sam_pnext0       - The 0-based position of the alignment's mate. Note that in SAM all positions are 1-based, but in BAM they are stored as 0-based. Unlike sam_pnext1, negative
+                               values are kept as negative values here, essentially giving you the value as it was stored in the BAM.
+            bam_pnext        - The original bytes before decoding to sam_pnext0.
+            sam_tlen         - The TLEN value. [ninth column in a SAM file]
+            bam_tlen         - The original binary used to make the sam_tlen before decoding.
+            sam_seq          - The SEQ value (DNA sequence of the alignment). Allowed values are "=ACMGRSVTWYHKDBN". [tenth column in a SAM file]
+            bam_seq          - The original bytes used to make sam_seq before decoding.
+            sam_qual         - The QUAL value (quality scores per DNA base in SEQ) of the alignment. [eleventh column in a SAM file]
+            bam_qual         - The original bytes used to make sam_qual before decoding.
+            sam_tags_list    - A list of tuples with 3 values per tuple: a two-letter TAG ID, the type code used to describe the data in the TAG value (see SAM spec. for details), and 
+                               the value of the TAG. Note that the BAM format has type codes like "c" for a number in the range -127 to +127, and "C" for a number in the range of 0 to 255.
+                               In a SAM file however, all numerical codes appear to just be stored using "i", which is a number in the range −2147483647 to +2147483647. sam_tags_list will
+                               therefore return the code used in the BAM file, and not 'i' for all numbers.
+            sam_tags_string  - Returns the TAGs in the same format as would be found in a SAM file (with all numbers having a code of 'i'). [twelfth column in a SAM file] 
+            bam_tags         - All the bytes needed to make sam_tags_list/string, but in the original binary encoding straight from the BAM file.
+
+        Extra SAM/bam data:
+            The BAM format stores data that is not in the SAM format, but may be useful in certain situations. Methods have been provided to access this data:
+            sam_bin          + The bin value of the alignment (used for indexing reads). Please refer to section 5.3 of the SAM spec for how this value is calculated.
+            bam_bin          + The raw binary of the above before decoding
+            sam_block_size   + The number of bytes the current alignment takes up in the BAM file minus the four bytes used to store the block_size value itself. 
+                               In other words, sam_block_size +4 == bytes needed to store this alignment
+            bam_block_size   + Raw binary of the above before decoding.
+            sam_l_read_name  + The length of the QNAME plus 1 because the QNAME is terminated with a NUL byte for some reason.
+            bam_l_read_name  + The raw binary of the above before decoding
+            sam_l_seq        + The number of bases in the seq. Useful if you just want to know how many bases are in the SEQ but do not need to know what those bases are (which requires decoding)
+            bam_l_seq        + The raw binary of the above before decoding
+            sam_n_cigar_op   + The number of CIGAR operations in the CIGAR field. Useful if you want to know how many CIGAR operations there are, but do not need to know what they are.
+            bam_n_cigar_op   + The raw binary of the above before decoding
+            
+### Decompression
+By far the biggest performance consideration when decoding BAM data is decompression. Python's internal gzip decompressor is very very slow, and as such it is always
+better to use the system gzip binary for decompressing instead. Users with pigz installed can perform decompression faster by using multiple threads, as pybam will try to 
+use the pigz binary if it exists before the gzip binary. If neither exists, pybam will use Python's internal gzip decompressor.
+In recent years, new implimentations of the gzip algorithm have been produced independantly by companies Intel and Cloudfare. Both implimentations are faster than standard gzip,
+and in fact the Cloudfare version using just 1 process is often faster than pigz with 4 or more. To use one of these alternative decompressors, before looking for either pigz or
+gzip, pybam will look for a system command called "pybam". It is assumed that a user who knows what they are doing can create an alias from pybam to any decompression binary they wish.
+If the user provided pybam with a path to a file, this path will be provided to the pybam command as the final argument, i.e. "pybam /path/to/file.bam". The user must make sure that
+their pybam alias expects the file path to be the last argument also. Alternatively, if pybam is provided with an open file handle instead of a string/path, compressed BAM data will
+be piped to the pybam system process via it's stdin, and decompressed data will be read from it's stdout, as is typical with decompression programs.
+For users who only ever use pybam to access their data, this allows one to completely remove gzip compression on a BAM file, and then re-compress the file using any compression
+algorithm they wish, such as the much faster LZO algorithm (roughly 8x faster to decompress, and at the highest compression level gives a comparible file size to gzip).
+Totally uncompressed BAM data can also be provided, where the decompression program used is simply cat (or read from stdin).
+
+### Dynamic vs Static Parsing
+Pybam provides two methods to parse BAM data line-by-line: either statically, or dynamically.
+With a dynamic parser, data is parsed as it is needed. For example:
+
+        >>> for read in pybam.read('/path/to/file.bam'):
+        ...    print read.sam_qname
+        ...    print read.sam_mapq
+        ...    print read.sam_seq
+        ...    (....etc)
+
+Here, these values are parsed out of the raw BAM file as they are needed. Two calls to a datum, such as sam_seq, would require the data to be parsed twice. Conversely, the less data one wishes to extract, the quicker one can read the BAM file as data that is not needed is not parsed out of its original binary encoding. To parse data using a static parser, simply provide a list/tuple of fields you wish to extract as a second argument to pybam.read, for example:
+
+    >>> for qname,mapq,seq in pybam.read('/path/to/file.bam',['sam_qname','sam_mapq','sam_seq']):
+    ...    print qname
+    ...    print mapq
+    ...    print seq
+    
+The static parser should, in an ideal world, be faster than the dynamic parser, although some optimizations can still be performed and are planned for the future.  To see the code generated by the static parser, look at the _static_parser_code property of the pybam.read object, for example:
+
+    >>> bam = pybam.read('/path/to/file.bam',['sam_qname','sam_mapq','sam_seq'])
+    >>> print bam._static_parser_code
+    def parser(self):
+        from array import array
+        from struct import unpack
+        for _ in self._new_entry:
+            sam_l_read_name, sam_mapq = unpack("<BB",self.bam[12:14])
+            sam_n_cigar_op = unpack("<H",self.bam[16:18])[0]
+            sam_l_seq = unpack("<i",self.bam[20:24])[0]
+            _end_of_qname = 36 + sam_l_read_name
+            _end_of_cigar = _end_of_qname + (4*sam_n_cigar_op)
+            _end_of_seq = _end_of_cigar + (-((-sam_l_seq)//2))
+            sam_qname        = self.bam[36            : _end_of_qname -1 ]
+            sam_seq = ''.join( [ dna_codes[dna >> 4] + dna_codes[dna & 0b1111]   for dna     in array('B', self.bam[_end_of_cigar : _end_of_seq])])[:sam_l_seq]
+            yield sam_qname,sam_mapq,sam_seq
+
+The static parser provides a definitive record for how the BAM file was parsed in universal python code. If the code that uses pybam is not kept with the output data it generates (which is considered good practice) then at the very least one should aim to store the code of the static parser along with their output, as it may resolve future questions and is good record keeping.
+
+Note that one can use a combination of static and dynamic parsing if they wish, although this author knows of no good reason to do so.
