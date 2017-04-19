@@ -5,7 +5,7 @@ pybam is a fast all-python module than you can copy-paste into your code to read
 
 
 # Using pybam
-### tl;dr:
+### Quick Example
 
         >>> import pybam
         >>> bam_file = pybam.read('./ENCFF001LCU.bam')
@@ -108,84 +108,87 @@ pybam's read return's a generator-class, meaning that every time it is iterated 
         AAACCGCCAAAAAAGAAAAAAAAAAAAAAAAAAAAA
         AAACAGCCCCAAAAAAAAAAAAAAAAAAAAAAAAAA
         
-### All Parse Codes:
-        File data:
-            [ Immediately avalible after opening a file with pybam.read ]
-            Prefixed with "file_", these properties tell you something about the BAM file itself:
-            file_bytes_read         - A running counter of decompressed BAM bytes read. Note that this is not the same as compressed bytes read, which is not currently calculated. Counter incremented in blocks as the file is read in blocks. Useful for status bars if the number of decompressed bytes is known in advance. Unfortunately, while the BAM format does technically have a mechanism for storing the uncompressed size of the BAM file, it is only reliable for files less than 4.3Gb bytes in size, so not provided.
-            file_alignments_read    - A running counter of BAM alignments/"reads" parsed so far. Useful for status bars if the number of reads are known in advance. Unfortunately, in the BAM format, there is no way to know in advance how many alignments there are in the file. It must all be read first.
+# Parse Codes
+### File data
 
-            file_header             - The ASCII header from the BAM file (the output of "samtools view -H")
-            file_binary_header      - The original binary header, i.e. all the bytes up until the first alignment entry ("read"). Useful when making a new BAM file the lazy way by copy/pasting an existing header.
-            file_chromosomes        - The chromosome names from the binary header of the BAM file
-            file_chromosome_lengths - The chromosome lengths from the binary header of the BAM file
+Prefixed with "file\_", these properties tell you something about the BAM file itself:
 
-            file_name               - The file name of the BAM file, or '<stdin>' if reading from stdin.
-            file_directory          - The directory of the BAM file, or the current working directory if reading from stdin.
-            file_decompressor       - The decompression program used (pybam,pigz,gzip,internal)
+        file_bytes_read         - A running counter of decompressed BAM bytes read. Note that this is not the same as compressed bytes read, which is not currently calculated. Counter incremented in blocks as the file is read in blocks. Useful for status bars if the number of decompressed bytes is known in advance. Unfortunately, while the BAM format does technically have a mechanism for storing the uncompressed size of the BAM file, it is only reliable for files less than 4.3Gb bytes in size, so not provided.
+        file_alignments_read    - A running counter of BAM alignments/"reads" parsed so far. Useful for status bars if the number of reads are known in advance. Unfortunately, in the BAM format, there is no way to know in advance how many alignments there are in the file. It must all be read first.
 
-        BAM/SAM data:
-            After at least 1 alignment has been parsed, the sam/bam properties can be used to pull out information from the BAM file one entry at a time.
-            Alignments are parsed whenever the pybam.read() object is iterated, i.e. "my_parsed_bam = pybam.read(my_bam)" will not parse any alignments, but as soon as the BAM
-            is iterated with either "next(my_parsed_bam)" or "for read in my_parsed_bam:" then the sam/bam properties can be accessed via either my_parsed_bam.X or read.x respectively.
-            sam              - Ideally as close to what samtools would print for the current entry if viewed via "samtools view"
-            bam              - All the bytes that make up the current entry, still in binary just as they were in the BAM file. Useful when creating a new BAM file of filtered alignments.
-            sam_qname        - The QNAME (Fragment ID) of the alignment [first column in a SAM file]
-            bam_qname        - The QNAME data directly from the BAM file, which is essentially the same as sam_qname but with a NUL byte on the end.
-            sam_flag         - The FLAG number of the alignment [second column in a SAM file]
-            bam_flag         - The original bytes before decoding to give the FLAG value.
-            sam_refID        - The chormosome ID (not the same as the name!) for the current entry. Chromosome names are stored in the BAM header (file_chromosomes), NOT in the alignments
-                               as thus to convert a refID to an actual chromosome name, one needs to do my_parsed_bam.file_chromosomes[read.sam_refID]. But for comparisons, using the refID
-                               is much faster that using the actual chromosome name (for example, when reading through a sorted BAM file and looking for where last_refID != read.sam_refID)
-                               Note that this value is negative when the alignment is not aligned, and thus one must not perform my_parsed_bam.file_chromosomes[read.sam_refID] without checking
-                               that the value is positive first.
-            sam_rname        - A method that does actually give the chromosome name (using file_chromosomes[sam_refID]). Will return "*" for negative values. [third column in a SAM file]
-            bam_refID        - The original binary bytes before decoding to sam_refID
-            sam_pos1         - The 1-based position of the alignment. Note that in SAM format values less than 1 are converted to '0' for "no data" and sam_pos1 will also do 
-                               this. [fourth column in a SAM file]
-            sam_pos0         - The 0-based position of the alignment. Note that in SAM all positions are 1-based, but in BAM they are stored as 0-based. Unlike sam_pos1, negative
-                               values are kept as negative values here, essentially giving you the decoded value as it was stored in the BAM.
-            bam_pos          - The original bytes before decoding to sam_pos0.
-            sam_mapq         - The Mapping Quality of the current alignment [fifth column in a SAM file]
-            bam_mapq         - The original binary for the above before decoding.
-            sam_cigar_string - The CIGAR string, as per the SAM format. Allowed values are "MIDNSHP=X". [sixth column in a SAM file]
-            sam_cigar_list   - A list of tuples with 2 values per tuple: the number of bases with the CIGAR value, and the CIGAR value. Faster to calculate than sam_cigar_string.
-            bam_cigar        - All the bytes needed to make the CIGAR field, as it was in the original BAM file.
-            sam_next_refID   - The sam_refID of the alignment's mate (if any). Note that as per sam_refID, this value can be negative and is not the chromosome name.
-            sam_rnext        - The chromosome name of the alignment's mate (if any). Value is "*" if unmapped. Note that in a SAM file this value is "=" if it is the same as the
-                               sam_rname, however pybam will only do this is the user prints the whole SAM entry with "sam". [seventh column in a SAM file]
-            bam_next_refID   - The original binary bytes before decoding to sam_next_refID
-            sam_pnext1       - The 1-based position of the alignment's mate. Note that in SAM format values less than 1 are converted to '0' for "no data" and sam_pnext1 will also do 
-                               this. [eigth column in a SAM file]
-            sam_pnext0       - The 0-based position of the alignment's mate. Note that in SAM all positions are 1-based, but in BAM they are stored as 0-based. Unlike sam_pnext1, negative
-                               values are kept as negative values here, essentially giving you the value as it was stored in the BAM.
-            bam_pnext        - The original bytes before decoding to sam_pnext0.
-            sam_tlen         - The TLEN value. [ninth column in a SAM file]
-            bam_tlen         - The original binary used to make the sam_tlen before decoding.
-            sam_seq          - The SEQ value (DNA sequence of the alignment). Allowed values are "=ACMGRSVTWYHKDBN". [tenth column in a SAM file]
-            bam_seq          - The original bytes used to make sam_seq before decoding.
-            sam_qual         - The QUAL value (quality scores per DNA base in SEQ) of the alignment. [eleventh column in a SAM file]
-            bam_qual         - The original bytes used to make sam_qual before decoding.
-            sam_tags_list    - A list of tuples with 3 values per tuple: a two-letter TAG ID, the type code used to describe the data in the TAG value (see SAM spec. for details), and 
-                               the value of the TAG. Note that the BAM format has type codes like "c" for a number in the range -127 to +127, and "C" for a number in the range of 0 to 255.
-                               In a SAM file however, all numerical codes appear to just be stored using "i", which is a number in the range −2147483647 to +2147483647. sam_tags_list will
-                               therefore return the code used in the BAM file, and not 'i' for all numbers.
-            sam_tags_string  - Returns the TAGs in the same format as would be found in a SAM file (with all numbers having a code of 'i'). [twelfth column in a SAM file] 
-            bam_tags         - All the bytes needed to make sam_tags_list/string, but in the original binary encoding straight from the BAM file.
+        file_header             - The ASCII header from the BAM file (the output of "samtools view -H")
+        file_binary_header      - The original binary header, i.e. all the bytes up until the first alignment entry ("read"). Useful when making a new BAM file the lazy way by copy/pasting an existing header.
+        file_chromosomes        - The chromosome names from the binary header of the BAM file
+        file_chromosome_lengths - The chromosome lengths from the binary header of the BAM file
 
-        Extra SAM/bam data:
-            The BAM format stores data that is not in the SAM format, but may be useful in certain situations. Methods have been provided to access this data:
-            sam_bin          + The bin value of the alignment (used for indexing reads). Please refer to section 5.3 of the SAM spec for how this value is calculated.
-            bam_bin          + The raw binary of the above before decoding
-            sam_block_size   + The number of bytes the current alignment takes up in the BAM file minus the four bytes used to store the block_size value itself. 
-                               In other words, sam_block_size +4 == bytes needed to store this alignment
-            bam_block_size   + Raw binary of the above before decoding.
-            sam_l_read_name  + The length of the QNAME plus 1 because the QNAME is terminated with a NUL byte for some reason.
-            bam_l_read_name  + The raw binary of the above before decoding
-            sam_l_seq        + The number of bases in the seq. Useful if you just want to know how many bases are in the SEQ but do not need to know what those bases are (which requires decoding)
-            bam_l_seq        + The raw binary of the above before decoding
-            sam_n_cigar_op   + The number of CIGAR operations in the CIGAR field. Useful if you want to know how many CIGAR operations there are, but do not need to know what they are.
-            bam_n_cigar_op   + The raw binary of the above before decoding
+        file_name               - The file name of the BAM file, or '<stdin>' if reading from stdin.
+        file_directory          - The directory of the BAM file, or the current working directory if reading from stdin.
+        file_decompressor       - The decompression program used (pybam,pigz,gzip,internal)
+
+### BAM/SAM data:
+After at least 1 alignment has been parsed, the sam/bam properties can be used to pull out information from the BAM file one entry at a time.
+Alignments are parsed whenever the pybam.read() object is iterated, i.e. "my_parsed_bam = pybam.read(my_bam)" will not parse any alignments, but as soon as the BAM
+is iterated with either "next(my_parsed_bam)" or "for read in my_parsed_bam:" then the sam/bam properties can be accessed via either my_parsed_bam.X or read.x respectively.
+
+        sam              - Ideally as close to what samtools would print for the current entry if viewed via "samtools view"
+        bam              - All the bytes that make up the current entry, still in binary just as they were in the BAM file. Useful when creating a new BAM file of filtered alignments.
+        sam_qname        - The QNAME (Fragment ID) of the alignment [first column in a SAM file]
+        bam_qname        - The QNAME data directly from the BAM file, which is essentially the same as sam_qname but with a NUL byte on the end.
+        sam_flag         - The FLAG number of the alignment [second column in a SAM file]
+        bam_flag         - The original bytes before decoding to give the FLAG value.
+        sam_refID        - The chormosome ID (not the same as the name!) for the current entry. Chromosome names are stored in the BAM header (file_chromosomes), NOT in the alignments
+                       as thus to convert a refID to an actual chromosome name, one needs to do my_parsed_bam.file_chromosomes[read.sam_refID]. But for comparisons, using the refID
+                       is much faster that using the actual chromosome name (for example, when reading through a sorted BAM file and looking for where last_refID != read.sam_refID)
+                       Note that this value is negative when the alignment is not aligned, and thus one must not perform my_parsed_bam.file_chromosomes[read.sam_refID] without checking
+                       that the value is positive first.
+        sam_rname        - A method that does actually give the chromosome name (using file_chromosomes[sam_refID]). Will return "*" for negative values. [third column in a SAM file]
+        bam_refID        - The original binary bytes before decoding to sam_refID
+        sam_pos1         - The 1-based position of the alignment. Note that in SAM format values less than 1 are converted to '0' for "no data" and sam_pos1 will also do 
+                       this. [fourth column in a SAM file]
+        sam_pos0         - The 0-based position of the alignment. Note that in SAM all positions are 1-based, but in BAM they are stored as 0-based. Unlike sam_pos1, negative
+                       values are kept as negative values here, essentially giving you the decoded value as it was stored in the BAM.
+        bam_pos          - The original bytes before decoding to sam_pos0.
+        sam_mapq         - The Mapping Quality of the current alignment [fifth column in a SAM file]
+        bam_mapq         - The original binary for the above before decoding.
+        sam_cigar_string - The CIGAR string, as per the SAM format. Allowed values are "MIDNSHP=X". [sixth column in a SAM file]
+        sam_cigar_list   - A list of tuples with 2 values per tuple: the number of bases with the CIGAR value, and the CIGAR value. Faster to calculate than sam_cigar_string.
+        bam_cigar        - All the bytes needed to make the CIGAR field, as it was in the original BAM file.
+        sam_next_refID   - The sam_refID of the alignment's mate (if any). Note that as per sam_refID, this value can be negative and is not the chromosome name.
+        sam_rnext        - The chromosome name of the alignment's mate (if any). Value is "*" if unmapped. Note that in a SAM file this value is "=" if it is the same as the
+                       sam_rname, however pybam will only do this is the user prints the whole SAM entry with "sam". [seventh column in a SAM file]
+        bam_next_refID   - The original binary bytes before decoding to sam_next_refID
+        sam_pnext1       - The 1-based position of the alignment's mate. Note that in SAM format values less than 1 are converted to '0' for "no data" and sam_pnext1 will also do 
+                       this. [eigth column in a SAM file]
+        sam_pnext0       - The 0-based position of the alignment's mate. Note that in SAM all positions are 1-based, but in BAM they are stored as 0-based. Unlike sam_pnext1, negative
+                       values are kept as negative values here, essentially giving you the value as it was stored in the BAM.
+        bam_pnext        - The original bytes before decoding to sam_pnext0.
+        sam_tlen         - The TLEN value. [ninth column in a SAM file]
+        bam_tlen         - The original binary used to make the sam_tlen before decoding.
+        sam_seq          - The SEQ value (DNA sequence of the alignment). Allowed values are "=ACMGRSVTWYHKDBN". [tenth column in a SAM file]
+        bam_seq          - The original bytes used to make sam_seq before decoding.
+        sam_qual         - The QUAL value (quality scores per DNA base in SEQ) of the alignment. [eleventh column in a SAM file]
+        bam_qual         - The original bytes used to make sam_qual before decoding.
+        sam_tags_list    - A list of tuples with 3 values per tuple: a two-letter TAG ID, the type code used to describe the data in the TAG value (see SAM spec. for details), and 
+                       the value of the TAG. Note that the BAM format has type codes like "c" for a number in the range -127 to +127, and "C" for a number in the range of 0 to 255.
+                       In a SAM file however, all numerical codes appear to just be stored using "i", which is a number in the range −2147483647 to +2147483647. sam_tags_list will
+                       therefore return the code used in the BAM file, and not 'i' for all numbers.
+        sam_tags_string  - Returns the TAGs in the same format as would be found in a SAM file (with all numbers having a code of 'i'). [twelfth column in a SAM file] 
+        bam_tags         - All the bytes needed to make sam_tags_list/string, but in the original binary encoding straight from the BAM file.
+
+### Extra SAM/bam data:
+The BAM format stores data that is not in the SAM format, but may be useful in certain situations. Methods have been provided to access this data:
+
+        sam_bin          + The bin value of the alignment (used for indexing reads). Please refer to section 5.3 of the SAM spec for how this value is calculated.
+        bam_bin          + The raw binary of the above before decoding
+        sam_block_size   + The number of bytes the current alignment takes up in the BAM file minus the four bytes used to store the block_size value itself. 
+                       In other words, sam_block_size +4 == bytes needed to store this alignment
+        bam_block_size   + Raw binary of the above before decoding.
+        sam_l_read_name  + The length of the QNAME plus 1 because the QNAME is terminated with a NUL byte for some reason.
+        bam_l_read_name  + The raw binary of the above before decoding
+        sam_l_seq        + The number of bases in the seq. Useful if you just want to know how many bases are in the SEQ but do not need to know what those bases are (which requires decoding)
+        bam_l_seq        + The raw binary of the above before decoding
+        sam_n_cigar_op   + The number of CIGAR operations in the CIGAR field. Useful if you want to know how many CIGAR operations there are, but do not need to know what they are.
+        bam_n_cigar_op   + The raw binary of the above before decoding
             
 ### Decompression
 By far the biggest performance consideration when decoding BAM data is decompression. Python's internal gzip decompressor is very very slow, and as such it is always
