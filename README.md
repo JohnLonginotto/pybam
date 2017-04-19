@@ -79,6 +79,7 @@ Pybam can parse data from a BAM file's header:
 
 ### Read Info
 pybam's read return's a generator-class, meaning that every time it is iterated a new read is avaliable for parsing using special parsing codes:
+
         >>>> read = next(bam)
         >>>> print read
         SOLEXA1_0001:4:49:11382:21230#0	0	chr1	3000743	0	36M	*	0	0	TTTTTTTTGTTTGTTTGTTTTTTTTTTCTGTTTCTT	####################################	NM:i:2	NH:i:13	CC:Z:chr15	CP:i:75293507
