@@ -34,23 +34,23 @@ pybam is a fast all-python module than you can copy-paste into your code to read
           bam --------------------- All the bytes that make up the current alignment ("read"),
                                       still in binary just as it was in the BAM file. Useful
                                       when creating a new BAM file of filtered alignments.
-          bam_bin ----------------- The original bytes before decoding to sam_bin.
-          bam_block_size ---------- The original bytes before decoding to sam_block_size.
-          bam_cigar --------------- The original bytes before decoding to sam_cigar_*.
-          bam_flag ---------------- The original bytes before decoding to sam_flag.
-          bam_l_read_name --------- The original bytes before decoding to sam_l_read_name.
-          bam_l_seq --------------- The original bytes before decoding to sam_l_seq.
-          bam_mapq ---------------- The original bytes before decoding to sam_mapq.
-          bam_n_cigar_op ---------- The original bytes before decoding to sam_n_cigar_op.
-          bam_next_refID ---------- The original bytes before decoding to sam_next_refID.
-          bam_pnext --------------- The original bytes before decoding to sam_pnext0.
-          bam_pos ----------------- The original bytes before decoding to sam_pos*.
-          bam_qname --------------- The original bytes before decoding to sam_qname.
-          bam_qual ---------------- The original bytes before decoding to sam_qual.
-          bam_refID --------------- The original bytes before decoding to sam_refID.
-          bam_seq ----------------- The original bytes before decoding to sam_seq.
-          bam_tags ---------------- The original bytes before decoding to sam_tags_*.
-          bam_tlen ---------------- The original bytes before decoding to sam_tlen.
+          bam_bin ----------------- The original bytes before decoding to sam_bin
+          bam_block_size ---------- The original bytes before decoding to sam_block_size
+          bam_cigar --------------- The original bytes before decoding to sam_cigar_*
+          bam_flag ---------------- The original bytes before decoding to sam_flag
+          bam_l_read_name --------- The original bytes before decoding to sam_l_read_name
+          bam_l_seq --------------- The original bytes before decoding to sam_l_seq
+          bam_mapq ---------------- The original bytes before decoding to sam_mapq
+          bam_n_cigar_op ---------- The original bytes before decoding to sam_n_cigar_op
+          bam_next_refID ---------- The original bytes before decoding to sam_next_refID
+          bam_pnext --------------- The original bytes before decoding to sam_pnext0
+          bam_pos ----------------- The original bytes before decoding to sam_pos*
+          bam_qname --------------- The original bytes before decoding to sam_qname
+          bam_qual ---------------- The original bytes before decoding to sam_qual
+          bam_refID --------------- The original bytes before decoding to sam_refID
+          bam_seq ----------------- The original bytes before decoding to sam_seq
+          bam_tags ---------------- The original bytes before decoding to sam_tags_*
+          bam_tlen ---------------- The original bytes before decoding to sam_tlen
 
         ===============================================================================================
 
