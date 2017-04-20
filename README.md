@@ -28,7 +28,7 @@ pybam is a fast all-python module than you can copy-paste into your code to read
           my_bam = pybam.read(sys.stdin,decompressor='lzma --decompress --stdout') # data given to lzma via stdin
 
 ### [ Force Internal bgzip Decompressor ]
-          my_bam = pybam.read('/my/data.bam',decompressor='internal')
+          my_bam = pybam.read('/my/data.bam',decompressor='internal') # Default is to try system pigz, then system gzip first, before falling back to internal decompressor.
 
 # All Parse Codes
           bam --------------------- All the bytes that make up the current alignment ("read"),
