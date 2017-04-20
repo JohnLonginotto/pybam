@@ -6,8 +6,6 @@ pybam is a fast all-python module than you can copy-paste into your code to read
 
 # Using pybam
 ### Quick Example
-        Main class: pybam.read
-        Github:     http://github.com/JohnLonginotto/pybam
 
         [ Dynamic Parser Example ]
           for alignment in pybam.read('/my/data.bam'):
