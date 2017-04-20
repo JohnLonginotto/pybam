@@ -5,34 +5,32 @@ pybam is a fast all-python module than you can copy-paste into your code to read
 
 
 # Using pybam
-### Quick Example
+### [ Dynamic Parser Example ]
+        for alignment in pybam.read('/my/data.bam'):
+            print alignment.sam_seq
 
-        [ Dynamic Parser Example ]
-          for alignment in pybam.read('/my/data.bam'):
-              print alignment.sam_seq
-
-        [ Static Parser Example ]
+### [ Static Parser Example ]
           for seq,mapq in pybam.read('/my/data.bam',['sam_seq','sam_mapq']):
                print seq
                print mapq
 
-        [ Mixed Parser Example ]
+### [ Mixed Parser Example ]
           my_bam = pybam.read('/my/data.bam',['sam_seq','sam_mapq'])
           print my_bam._static_parser_code
           for seq,mapq in my_bam:
                if seq.startswith('ACGT') and mapq > 10:
                print my_bam.sam
 
-        [ Custom Decompressor (from file path) Example ]
+### [ Custom Decompressor (from file path) Example ]
           my_bam = pybam.read('/my/data.bam.lzma',decompressor='lzma --decompress --stdout /my/data.bam.lzma')
 
-        [ Custom Decompressor (from file object) Example ]
+### [ Custom Decompressor (from file object) Example ]
           my_bam = pybam.read(sys.stdin,decompressor='lzma --decompress --stdout') # data given to lzma via stdin
 
-        [ Force Internal bgzip Decompressor ]
+### [ Force Internal bgzip Decompressor ]
           my_bam = pybam.read('/my/data.bam',decompressor='internal')
 
-        [ Parse Words (hah) ]
+# All Parse Codes
           bam --------------------- All the bytes that make up the current alignment ("read"),
                                       still in binary just as it was in the BAM file. Useful
                                       when creating a new BAM file of filtered alignments.
