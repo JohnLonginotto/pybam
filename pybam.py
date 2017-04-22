@@ -1,8 +1,8 @@
 '''
 Awesome people who have directly contributed to the project:
 Jon Palmer - Bug finder & advice on project direction
+Mahmut Uludag - Bug finder
 
-Main class: pybam.read
 Help:       print pybam.wat
 Github:     http://github.com/JohnLonginotto/pybam
 
@@ -582,7 +582,7 @@ class read:
                 'py4py':py4py,
                 'cigar_codes':cigar_codes
             }
-            exec(code,exec_dict)            # exec() compiles "code" to real code, creating the "parser" function and adding it to exec_dict['parser']
+            exec code in exec_dict            # exec() compiles "code" to real code, creating the "parser" function and adding it to exec_dict['parser']
             return exec_dict['parser']
 
         if fields:
