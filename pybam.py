@@ -214,11 +214,13 @@ class read:
                 # else look for pigz or gzip:
                 else:
                     try:
-                        self._subprocess = subprocess.Popen(["pigz"],stdin=DEVNULL,stdout=DEVNULL,stderr=DEVNULL); self._subprocess.kill()
+                        self._subprocess = subprocess.Popen(["pigz"],stdin=DEVNULL,stdout=DEVNULL,stderr=DEVNULL)
+                        if self._subprocess.returncode is None: self._subprocess.kill()
                         use = 'pigz'
                     except OSError:
                         try:
-                            self._subprocess = subprocess.Popen(["gzip"],stdin=DEVNULL,stdout=DEVNULL,stderr=DEVNULL); self._subprocess.kill()
+                            self._subprocess = subprocess.Popen(["gzip"],stdin=DEVNULL,stdout=DEVNULL,stderr=DEVNULL)
+                            if self._subprocess.returncode is None: self._subprocess.kill()
                             use = 'gzip'
                         except OSError: use = 'internal'
 
@@ -725,7 +727,7 @@ class read:
     def _end_of_qual(self):      return self._end_of_seq       + self.sam_l_seq            # qual has the same length as seq
 
     def __del__(self):
-        self._subprocess.kill()
+        if self._subprocess.returncode is None: self._subprocess.kill()
         self._file.close()
 
 
